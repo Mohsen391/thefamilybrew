@@ -473,7 +473,7 @@
 
     <div class="form-row">
       <label>Your Name</label>
-      <input type="text" id="input-name" placeholder="e.g. Sulaiman, Khaled, Hessa…" autocomplete="off">
+      <input type="text" id="input-name" placeholder="e.g. Mum, Dad, Layla…" autocomplete="off">
     </div>
 
     <div class="form-row">
@@ -504,7 +504,7 @@
   // ══════════════════════════════════════════════════════
   //  CONFIG — paste your deployed Apps Script URL below
   // ══════════════════════════════════════════════════════
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwwzXMZThVd42u3n0nrVAmtJwcCR_8jl_wrcSRwv8Bev7tSuxWEuZxVCo7k3ee2n6NH/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxph-2mBelSFps7NRb8uT5ce10Dd4X_HXc1m-DDij-qYw8DfawUv9h6kcof7ubUw2Ch/exec";
 
   // ── State ─────────────────────────────────────────────
   let selectedDrink = "";
@@ -565,10 +565,15 @@
 
   inputName.addEventListener("input", updateOrderButton);
 
-  // ── Submit Order (GET request avoids CORS issues with Apps Script) ──
+  // ── Submit Order ─────────────────────────────────────────────
   btnOrder.addEventListener("click", async () => {
     const name = inputName.value.trim();
     if (!name || !selectedDrink) return;
+
+    // Request notification permission on first order
+    if ("Notification" in window && Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
 
     btnOrder.innerHTML = '<span class="spinner"></span> Sending…';
     btnOrder.disabled = true;
@@ -588,16 +593,26 @@
       const data = await res.json();
 
       if (data.success) {
-        showToast(`☕ Order placed! See you soon, ${name}.`);
-        inputName.value    = "";
-        inputCustom.value  = "";
-        selectedDrink      = "";
-        inputDrink.value   = "";
+        const orderId   = data.orderId;
+        const orderName = name;
+        const orderDrink = selectedDrink;
+
+        showToast(`☕ Order placed! We'll notify you when it's ready, ${name}.`);
+
+        // Reset form
+        inputName.value  = "";
+        inputCustom.value = "";
+        selectedDrink    = "";
+        inputDrink.value = "";
         drinkDisplay.textContent = "← Choose a drink from the menu above";
         drinkDisplay.style.color = "";
         drinkDisplay.style.fontStyle = "italic";
         document.querySelectorAll(".menu-item").forEach(i => i.classList.remove("selected"));
         updateOrderButton();
+
+        // Start polling for order ready status
+        startPolling(orderId, orderName, orderDrink);
+
       } else {
         throw new Error(data.error || "Unknown error");
       }
@@ -607,17 +622,123 @@
     }
   });
 
+  // ── Order Ready Polling ───────────────────────────────────────
+  let pollingInterval = null;
+
+  function startPolling(orderId, name, drink) {
+    // Show "waiting" bar
+    showWaitingBar(name, drink);
+
+    // Poll every 10 seconds
+    pollingInterval = setInterval(async () => {
+      try {
+        const res  = await fetch(`${SCRIPT_URL}?action=checkorder&orderId=${encodeURIComponent(orderId)}`);
+        const data = await res.json();
+
+        if (data.found && data.status === "Ready") {
+          clearInterval(pollingInterval);
+          hideWaitingBar();
+          notifyReady(name, drink);
+        }
+      } catch(e) {
+        // silently ignore polling errors
+      }
+    }, 10000);
+  }
+
+  function notifyReady(name, drink) {
+    // Big on-screen popup
+    showReadyModal(name, drink);
+
+    // Browser push notification
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification("☕ Your order is ready!", {
+        body: `${name}, your ${drink} is ready! Come pick it up. `,
+        icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>"
+      });
+    }
+  }
+
+  // ── Waiting Bar ───────────────────────────────────────────────
+  function showWaitingBar(name, drink) {
+    let bar = document.getElementById("waiting-bar");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "waiting-bar";
+      bar.style.cssText = `
+        position:fixed; bottom:0; left:0; right:0;
+        background:var(--espresso); color:var(--cream);
+        padding:1rem 1.5rem; text-align:center;
+        font-family:var(--ff-body); font-size:.875rem;
+        z-index:50; display:flex; align-items:center;
+        justify-content:center; gap:.75rem;
+        box-shadow:0 -4px 20px rgba(0,0,0,.2);
+      `;
+      document.body.appendChild(bar);
+    }
+    bar.innerHTML = `<span class="spinner"></span> Preparing <strong>${drink}</strong> for ${name} — we'll notify you when it's ready!`;
+  }
+
+  function hideWaitingBar() {
+    const bar = document.getElementById("waiting-bar");
+    if (bar) bar.remove();
+  }
+
+  // ── Ready Modal ───────────────────────────────────────────────
+  function showReadyModal(name, drink) {
+    const overlay = document.createElement("div");
+    overlay.style.cssText = `
+      position:fixed; inset:0; background:rgba(44,26,14,.85);
+      display:flex; align-items:center; justify-content:center;
+      z-index:200; padding:1.5rem;
+      animation: fadeIn .3s ease;
+    `;
+    overlay.innerHTML = `
+      <div style="
+        background:var(--cream); border-radius:20px;
+        padding:2.5rem 2rem; text-align:center;
+        max-width:320px; width:100%;
+        box-shadow:0 20px 60px rgba(0,0,0,.4);
+        animation: popUp .4s cubic-bezier(.34,1.56,.64,1);
+      ">
+        <div style="font-size:3.5rem; margin-bottom:.75rem">☕</div>
+        <h2 style="font-family:var(--ff-display);font-size:1.6rem;color:var(--espresso);margin-bottom:.5rem">
+          It's ready, ${name}!
+        </h2>
+        <p style="color:var(--text-mid);font-size:.9rem;margin-bottom:1.75rem">
+          Your <strong>${drink}</strong> is freshly brewed and waiting for you!
+        </p>
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="
+          background:var(--espresso); color:var(--cream);
+          border:none; border-radius:50px; padding:.85rem 2rem;
+          font-family:var(--ff-body); font-size:.9rem;
+          font-weight:500; cursor:pointer; width:100%;
+          letter-spacing:.08em;
+        ">Got it! 🙌</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+  }
+
   // ── Toast ──────────────────────────────────────────────
   let toastTimer;
   function showToast(msg, isError = false) {
     toast.textContent = msg;
     toast.className   = "show" + (isError ? " error" : "");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { toast.className = ""; }, 3500);
+    toastTimer = setTimeout(() => { toast.className = ""; }, 4500);
   }
 
   // ── Init ───────────────────────────────────────────────
   checkStatus();
 </script>
+
+<style>
+  @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+  @keyframes popUp  { from { transform:scale(.85); opacity:0 } to { transform:scale(1); opacity:1 } }
+</style>
 </body>
 </html>
