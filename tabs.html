@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Tab — The Family Brew</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream:#F5EFE4; --cream-dark:#EDE4D3; --espresso:#2C1A0E;
+    --mocha:#5C3D2E; --caramel:#C8894A; --caramel-lt:#DFB07A;
+    --steam:#F9F4EC; --text:#2C1A0E; --text-mid:#7A5C44;
+    --text-lt:#B89880; --border:#DDD0BC; --shadow:rgba(44,26,14,0.10);
+    --ff-display:'Playfair Display',Georgia,serif;
+    --ff-body:'Jost',sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--cream);color:var(--text);
+    font-family:var(--ff-body);font-weight:300;
+    min-height:100vh;
+  }
+  body::before{
+    content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity:.5;
+  }
+
+  header{
+    background:var(--espresso);color:var(--cream);
+    padding:2rem 1.5rem 2.5rem;text-align:center;position:relative;overflow:hidden;
+  }
+  header::after{
+    content:'';position:absolute;bottom:-1px;left:0;right:0;
+    height:32px;background:var(--cream);
+    clip-path:ellipse(55% 100% at 50% 100%);
+  }
+  header h1{font-family:var(--ff-display);font-size:clamp(1.6rem,4vw,2.2rem);font-weight:600;}
+  header h1 em{font-style:italic;color:var(--caramel-lt);}
+  header p{font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;color:var(--text-lt);margin-top:.3rem;}
+
+  main{max-width:600px;margin:0 auto;padding:2rem 1.25rem 5rem;}
+
+  .section-label{
+    font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--text-lt);margin-bottom:1.25rem;
+    display:flex;align-items:center;gap:.75rem;
+  }
+  .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  /* Total banner */
+  .total-banner{
+    background:var(--espresso);color:var(--cream);
+    border-radius:16px;padding:1.5rem;
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:2rem;
+    box-shadow:0 4px 20px var(--shadow);
+  }
+  .total-label{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,239,228,.5);margin-bottom:.3rem;}
+  .total-amount{font-family:var(--ff-display);font-size:2rem;font-weight:600;color:var(--caramel-lt);}
+  .total-amount span{font-size:1rem;color:rgba(245,239,228,.5);margin-right:.2rem;}
+  .total-status{
+    font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+    padding:.35rem .8rem;border-radius:50px;font-weight:500;
+  }
+  .total-status.unpaid{background:rgba(240,128,128,.15);color:#f08080;border:1px solid rgba(240,128,128,.3);}
+  .total-status.paid{background:rgba(82,209,138,.15);color:#52d18a;border:1px solid rgba(82,209,138,.3);}
+  .total-status.clear{background:rgba(82,209,138,.15);color:#52d18a;border:1px solid rgba(82,209,138,.3);}
+
+  /* Person cards */
+  .tabs-grid{display:flex;flex-direction:column;gap:.75rem;margin-bottom:2rem;}
+
+  .tab-card{
+    background:var(--steam);border:1.5px solid var(--border);
+    border-radius:14px;padding:1.1rem 1.25rem;
+    display:flex;align-items:center;gap:1rem;
+    transition:all .2s ease;
+    animation:fadeUp .5s ease forwards;opacity:0;
+  }
+  @keyframes fadeUp{to{opacity:1;transform:translateY(0)}from{opacity:0;transform:translateY(10px)}}
+
+  .tab-avatar{
+    width:44px;height:44px;border-radius:50%;
+    background:linear-gradient(135deg,var(--caramel),var(--mocha));
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--ff-display);font-size:1.1rem;font-weight:600;
+    color:var(--cream);flex-shrink:0;text-transform:uppercase;
+  }
+  .tab-info{flex:1;}
+  .tab-name{font-size:.95rem;font-weight:500;color:var(--text);}
+  .tab-updated{font-size:.72rem;color:var(--text-lt);margin-top:.15rem;}
+
+  .tab-right{text-align:right;}
+  .tab-amount{
+    font-family:var(--ff-display);font-size:1.3rem;font-weight:600;
+    color:var(--espresso);
+  }
+  .tab-amount.zero{color:var(--text-lt);}
+  .tab-amount .currency{font-size:.8rem;color:var(--text-lt);margin-right:.1rem;}
+  .tab-badge{
+    font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;
+    padding:.2rem .6rem;border-radius:50px;margin-top:.3rem;
+    display:inline-block;font-weight:500;
+  }
+  .tab-badge.unpaid{background:#fef0f0;color:#c0392b;border:1px solid #fad7d7;}
+  .tab-badge.paid{background:#f0fef4;color:#27ae60;border:1px solid #c8f0d4;}
+
+  /* Empty state */
+  .empty-state{
+    text-align:center;padding:3rem 1rem;color:var(--text-lt);
+  }
+  .empty-state .icon{font-size:2.5rem;margin-bottom:.75rem;}
+  .empty-state p{font-size:.85rem;}
+
+  /* Loading */
+  .loading{text-align:center;padding:2rem;color:var(--text-lt);font-size:.85rem;}
+  .spinner{
+    display:inline-block;width:16px;height:16px;
+    border:2px solid var(--border);border-top-color:var(--caramel);
+    border-radius:50%;animation:spin .7s linear infinite;
+    margin-right:.5rem;vertical-align:middle;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Admin mark paid */
+  .admin-section{
+    background:var(--steam);border:1.5px solid var(--border);
+    border-radius:14px;padding:1.25rem;margin-top:1.5rem;
+  }
+  .admin-section h3{
+    font-family:var(--ff-display);font-size:1rem;font-weight:600;
+    margin-bottom:1rem;color:var(--mocha);
+  }
+  .admin-row{display:flex;gap:.6rem;align-items:center;}
+  .admin-row input{
+    flex:1;background:var(--cream);border:1.5px solid var(--border);
+    border-radius:8px;padding:.6rem .8rem;font-family:var(--ff-body);
+    font-size:.85rem;color:var(--text);outline:none;transition:border-color .2s;
+  }
+  .admin-row input:focus{border-color:var(--caramel);}
+  .btn-paid{
+    background:var(--espresso);color:var(--cream);border:none;
+    border-radius:8px;padding:.6rem 1rem;font-family:var(--ff-body);
+    font-size:.82rem;font-weight:500;cursor:pointer;transition:all .2s;
+    white-space:nowrap;
+  }
+  .btn-paid:hover{background:var(--mocha);}
+
+  footer{text-align:center;padding:2rem;font-size:.75rem;letter-spacing:.1em;color:var(--text-lt);}
+
+  #toast{
+    position:fixed;bottom:1.5rem;left:50%;
+    transform:translateX(-50%) translateY(80px);
+    background:var(--espresso);color:var(--cream);
+    padding:.75rem 1.5rem;border-radius:50px;font-size:.85rem;
+    box-shadow:0 8px 32px rgba(0,0,0,.25);
+    transition:transform .4s cubic-bezier(.34,1.56,.64,1);z-index:100;
+  }
+  #toast.show{transform:translateX(-50%) translateY(0);}
+  #toast.error{background:#6a1a1a;color:#fdd;}
+
+  a.nav-link{
+    display:inline-block;margin-bottom:1.5rem;
+    font-size:.78rem;color:var(--text-lt);text-decoration:none;
+    letter-spacing:.08em;transition:color .2s;
+  }
+  a.nav-link:hover{color:var(--caramel);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>The Family <em>Tab</em></h1>
+  <p>Monthly balances</p>
+</header>
+
+<main>
+  <a href="index.html" class="nav-link">← Back to ordering</a>
+
+  <!-- Total summary -->
+  <div id="total-banner" class="total-banner" style="display:none">
+    <div>
+      <div class="total-label">Total Outstanding</div>
+      <div class="total-amount" id="total-amount"><span>KWD</span>0.000</div>
+    </div>
+    <div class="total-status unpaid" id="total-status">Unpaid</div>
+  </div>
+
+  <div class="section-label">Family Tabs</div>
+
+  <div id="tabs-list" class="tabs-grid">
+    <div class="loading"><span class="spinner"></span>Loading tabs…</div>
+  </div>
+
+  <!-- Admin: mark as paid -->
+  <div class="admin-section">
+    <h3>☕ Mark Tab as Paid</h3>
+    <div class="admin-row">
+      <input type="password" id="admin-pwd" placeholder="Admin password">
+      <input type="text" id="pay-name" placeholder="Person's name">
+      <button class="btn-paid" onclick="markPaid()">Mark Paid</button>
+    </div>
+  </div>
+
+</main>
+
+<footer>The Family Brew — Tab Tracker</footer>
+<div id="toast"></div>
+
+<script>
+  const SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzoZm0wT2yjQalRt2Pg6YcAGdmPwlRBrXxrEBDJkAtXAnjd3rlPsAeUTKRQUK1swlB4zg/exec";
+  const ADMIN_PASSWORD = "mohsen";
+
+  const tabsList    = document.getElementById("tabs-list");
+  const totalBanner = document.getElementById("total-banner");
+  const totalAmt    = document.getElementById("total-amount");
+  const totalStatus = document.getElementById("total-status");
+  const toast       = document.getElementById("toast");
+
+  // ── Load tabs ────────────────────────────────────────────
+  async function loadTabs() {
+    try {
+      const res  = await fetch(`${SCRIPT_URL}?action=tabs`);
+      const data = await res.json();
+
+      if (data.success) {
+        renderTabs(data.tabs);
+      } else {
+        tabsList.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Could not load tabs</p></div>`;
+      }
+    } catch(e) {
+      tabsList.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Connection error</p></div>`;
+    }
+  }
+
+  function renderTabs(tabs) {
+    if (!tabs || tabs.length === 0) {
+      tabsList.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">✨</div>
+          <p>No tabs yet — everyone's square!</p>
+        </div>`;
+      return;
+    }
+
+    // Calculate total
+    const total = tabs.reduce((sum, t) => sum + (parseFloat(t.owed) || 0), 0);
+    totalBanner.style.display = "flex";
+    totalAmt.innerHTML = `<span>KWD</span>${total.toFixed(3)}`;
+
+    const allPaid = tabs.every(t => (parseFloat(t.owed) || 0) === 0);
+    totalStatus.textContent = allPaid ? "All Clear ✓" : "Outstanding";
+    totalStatus.className   = "total-status " + (allPaid ? "clear" : "unpaid");
+
+    // Sort by amount owed descending
+    tabs.sort((a, b) => b.owed - a.owed);
+
+    tabsList.innerHTML = tabs.map((t, i) => {
+      const owed    = parseFloat(t.owed) || 0;
+      const initials = t.name.trim().split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase();
+      const isPaid  = owed === 0;
+      const updated = t.updated ? new Date(t.updated).toLocaleDateString("en-GB", {day:"numeric",month:"short"}) : "";
+
+      return `
+        <div class="tab-card" style="animation-delay:${i * 0.07}s">
+          <div class="tab-avatar">${initials}</div>
+          <div class="tab-info">
+            <div class="tab-name">${esc(t.name)}</div>
+            ${updated ? `<div class="tab-updated">Last order: ${updated}</div>` : ""}
+          </div>
+          <div class="tab-right">
+            <div class="tab-amount ${isPaid ? "zero" : ""}">
+              <span class="currency">KWD</span>${owed.toFixed(3)}
+            </div>
+            <div class="tab-badge ${isPaid ? "paid" : "unpaid"}">${isPaid ? "Paid ✓" : "Owes"}</div>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  // ── Mark paid ────────────────────────────────────────────
+  async function markPaid() {
+    const pwd  = document.getElementById("admin-pwd").value.trim();
+    const name = document.getElementById("pay-name").value.trim();
+
+    if (!pwd || !name) {
+      showToast("Enter password and name", true);
+      return;
+    }
+
+    try {
+      const res  = await fetch(`${SCRIPT_URL}?action=paytab&password=${encodeURIComponent(pwd)}&name=${encodeURIComponent(name)}`);
+      const data = await res.json();
+
+      if (data.success) {
+        showToast(`✓ ${name}'s tab marked as paid!`);
+        document.getElementById("pay-name").value = "";
+        loadTabs();
+      } else {
+        showToast("Error: " + data.error, true);
+      }
+    } catch(e) {
+      showToast("Connection error", true);
+    }
+  }
+
+  function esc(s) {
+    return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    toast.textContent = msg;
+    toast.className = "show" + (isError ? " error" : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.className = ""; }, 3500);
+  }
+
+  loadTabs();
+</script>
+</body>
+</html>
